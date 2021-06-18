@@ -1,5 +1,6 @@
 import com.github.javafaker.Faker
-import groovy.lang.Closure
+import java.time.Duration.ofMillis
+
 
 plugins {
     kotlin("jvm") version "1.5.10"
@@ -108,6 +109,126 @@ tasks.register("fakeName") {
             I live at ${faker.address().fullAddress()}
         """.trimIndent()
         )
+    }
+}
+
+
+// ---------- lazy task dependencies -----------
+val taskX by tasks.registering {
+    doLast {
+        println("taskX")
+    }
+}
+
+// Using a Gradle Provider
+taskX {
+    dependsOn(provider {
+        tasks.filter { task -> task.name.startsWith("lib") }
+    })
+
+}
+
+val lib1 by tasks.registering {
+    doLast {
+        println("i'm task lib1")
+    }
+}
+
+val lib2: Task by tasks.creating {
+    doLast {
+        println("i'm task lib2")
+    }
+}
+
+val unrelatedLibTask: Task by tasks.creating {
+    doLast {
+        println("i'm should be loaded")
+    }
+}
+
+// ----------- ordering task execution --------
+
+val taskA by tasks.registering {
+    doLast {
+        println("taskA")
+    }
+}
+val taskB by tasks.registering {
+    doLast {
+        println("taskB")
+    }
+}
+taskA {
+    mustRunAfter(taskB)
+}
+
+val taskC by tasks.registering {
+    doLast {
+        println("taskC")
+    }
+}
+
+taskC {
+    shouldRunAfter(taskA)
+}
+
+// ------------ Skippable task ----------
+
+hello {
+    onlyIf {
+        !project.hasProperty("skipHello")
+    }
+}
+
+// ---------- stop execution task -------
+val taskA1 by tasks.registering {
+    doLast {
+        println("taskA1")
+    }
+}
+
+val taskB1 by tasks.registering {
+    dependsOn(taskA1)
+    doLast {
+        println("taskB1")
+    }
+}
+
+taskA1 {
+    doFirst {
+        throw StopExecutionException()
+    }
+}
+
+// ----------- disabled task ---------
+
+val disabledTask by tasks.registering {
+    enabled = false
+    doLast {
+        println("I'm disabled task!")
+    }
+}
+
+val enabledTask by tasks.registering {
+    dependsOn(disabledTask)
+    doLast {
+        println("I'm enabled task!")
+    }
+}
+
+// -------- Time out task ---------
+
+val timeOutTask by tasks.registering {
+    doLast {
+        Thread.sleep(1000)
+    }
+    timeout.set(ofMillis(500))
+}
+
+val timeTestTask by tasks.registering {
+    dependsOn(timeOutTask)
+    doLast {
+        println("I'm testing time out!")
     }
 }
 
