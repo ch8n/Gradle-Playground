@@ -94,7 +94,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        "classpath"(group = "com.github.javafaker", name = "javafaker", version = "1.0.2")
+        classpath("com.github.javafaker:javafaker:1.0.2")
     }
 }
 
